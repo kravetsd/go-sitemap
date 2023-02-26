@@ -1,0 +1,4 @@
+github.com/kravetsd/link v0.0.0-20230226195915-b31c59e8a82e h1:EXUtfsxJkYoRTSu5QP5I9k9LCqFDzK5Kp6XDFIWaoI4=
+github.com/kravetsd/link v0.0.0-20230226195915-b31c59e8a82e/go.mod h1:vasc/Ne591fjLFlXZwnVxvMItRdQP5KoIdw5kQhEy+I=
+golang.org/x/net v0.7.0 h1:rJrUqqhjsgNp7KqAIc25s9pZnjU7TUcSY7HcVZjdn1g=
+golang.org/x/net v0.7.0/go.mod h1:2Tu9+aMcznHK/AK1HMvgo6xiTLG5rD5rZLDS+rp2Bjs=
