@@ -4,7 +4,6 @@ import (
 	"encoding/xml"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -58,44 +57,30 @@ func store(s LinkStore, ln string) {
 		if strings.HasPrefix(l.Href, "#") {
 			continue
 		}
-		fmt.Println("href: ", l.Href)
 		if strings.HasPrefix(l.Href, "/") {
-			fmt.Println("updating: ", "https://www.calhoun.io"+l.Href)
 			l = link.Link{Href: "https://www.calhoun.io" + l.Href, Text: l.Text}
 		}
-		fmt.Println("This is after link was updated: ", l.Href)
 		if _, ok := s[l.Href]; !ok {
 			if strings.Contains(l.Href, "calhoun.io") && !strings.Contains(l.Href, "mailto") {
 				s[l.Href] = l
 				store(s, l.Href)
 			}
-			// } else if strings.HasPrefix(l.Href, "/") {
-			// 	s[l.Href] = l
-			// 	store(s, "https://www.calhoun.io"+l.Href)
-			// }
 		}
 	}
 }
 
 func getLinks(url string) ([]link.Link, error) {
-	body, err := getRespBody(url)
+	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
-	defer body.Close()
 
-	links, err := link.Parse(body)
+	defer resp.Body.Close()
+
+	links, err := link.Parse(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	return links, nil
-}
-
-func getRespBody(url string) (io.ReadCloser, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	return resp.Body, nil
 }
