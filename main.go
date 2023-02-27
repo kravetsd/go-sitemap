@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/xml"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/kravetsd/link"
@@ -12,26 +14,43 @@ import (
 
 type LinkStore map[string]link.Link
 
+type Urlset struct {
+	URL []Url `xml:"url"`
+}
+
+type Url struct {
+	Loc string `xml:"loc"`
+}
+
+func getUrls(ls LinkStore) []Url {
+	var urls []Url
+	for _, i := range ls {
+		urls = append(urls, Url{Loc: i.Href})
+	}
+	return urls
+}
+
 func main() {
 
 	storage := make(LinkStore)
-
 	store(storage, "https://www.calhoun.io/")
-	for _, i := range storage {
-		log.Println(i.Href)
+	urlset := Urlset{URL: getUrls(storage)}
+
+	res, _ := xml.MarshalIndent(urlset, "", "  ")
+	res = append([]byte(xml.Header), res...)
+
+	f, err := os.Create("sitemap.xml")
+	if err != nil {
+		log.Fatal("error creating xml file", err)
 	}
-	fmt.Println(len(storage))
+	f.Write(res)
 
 }
 
 func store(s LinkStore, ln string) {
-	body, err := getRespBody(ln)
+	links, err := getLinks(ln)
 	if err != nil {
-		log.Println("error openning url: ", err)
-	}
-	links, err := link.Parse(body)
-	if err != nil {
-		log.Println("error patsing web page: ", err)
+		fmt.Println("error getting links: ", err)
 	}
 	for _, l := range links {
 		if _, ok := s[l.Href]; !ok {
@@ -41,11 +60,23 @@ func store(s LinkStore, ln string) {
 			} else if strings.HasPrefix(l.Href, "/") {
 				s[l.Href] = l
 				store(s, "https://www.calhoun.io"+l.Href)
-			} else {
-				fmt.Println("duplicate or not a calhoun.io link: ", l.Href)
 			}
 		}
 	}
+}
+
+func getLinks(url string) ([]link.Link, error) {
+	body, err := getRespBody(url)
+	if err != nil {
+		return nil, err
+	}
+
+	links, err := link.Parse(body)
+	if err != nil {
+		return nil, err
+	}
+
+	return links, nil
 }
 
 func getRespBody(url string) (io.ReadCloser, error) {
@@ -53,6 +84,5 @@ func getRespBody(url string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return resp.Body, nil
 }
