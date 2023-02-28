@@ -12,30 +12,14 @@ import (
 	"github.com/kravetsd/link"
 )
 
-type LinkStore map[string]link.Link
-
-type Urlset struct {
-	URL []Url `xml:"url"`
-}
-
-type Url struct {
-	Loc string `xml:"loc"`
-}
-
-// func getUrls(ls LinkStore) []Url {
-// 	var urls []Url
-// 	for _, i := range ls {
-// 		urls = append(urls, Url{Loc: i.Href})
-// 	}
-// 	return urls
-// }
-
 func main() {
 	// setting the domain va flag
-	ln := *flag.String("url", "https://www.calhoun.io/creating-random-strings-in-go/", "url to build sitemap for")
+	ln := flag.String("url", "https://www.calhoun.io/creating-random-strings-in-go/", "url to build sitemap for")
+	flag.Parse()
 
+	fmt.Println("Getting links from: ", *ln)
 	// getting the links from the domain
-	hrefs := get(ln)
+	hrefs := get(*ln)
 	for _, ln := range hrefs {
 		fmt.Println(ln)
 	}
@@ -56,14 +40,20 @@ func main() {
 
 }
 
-func filterLinks(s []string, base string) []string {
+func filterLinks(s []string, keepFunc func(s string) bool) []string {
 	var hrefs []string
 	for _, ln := range s {
-		if strings.HasPrefix(ln, base) {
+		if keepFunc(ln) {
 			hrefs = append(hrefs, ln)
 		}
 	}
 	return hrefs
+}
+
+func withPrefix(pfx string) func(s string) bool {
+	return func(s string) bool {
+		return strings.HasPrefix(s, pfx)
+	}
 }
 
 func get(urlString string) []string {
@@ -80,7 +70,7 @@ func get(urlString string) []string {
 		Scheme: reqUrl.Scheme,
 		Host:   reqUrl.Host,
 	}
-	return filterLinks(hrefs(resp.Body, baseUrl.String()), baseUrl.String())
+	return filterLinks(hrefs(resp.Body, baseUrl.String()), withPrefix(baseUrl.String()))
 }
 
 func hrefs(r io.Reader, base string) []string {
@@ -96,48 +86,3 @@ func hrefs(r io.Reader, base string) []string {
 	}
 	return ret
 }
-
-// func store(s LinkStore, ln string) {
-// 	u := &url.URL{
-// 		Scheme: "https",
-// 		Host:   ln,
-// 	}
-// 	fmt.Println(ln, "=>", u.String())
-// 	links, err := getLinks(ln)
-// 	if err != nil {
-// 		fmt.Println("error getting links: ", err)
-// 	}
-// 	for _, l := range links {
-// 		if strings.HasPrefix(l.Href, "#") {
-// 			continue
-// 		}
-// 		if strings.HasPrefix(l.Href, "/") {
-// 			// fmt.Println("this is a relative link: ", l.Href)
-// 			// fmt.Println("we need to change,", ln, "=>", "https://www.calhoun.io"+l.Href)
-// 			l = link.Link{Href: "https://www.calhoun.io" + l.Href, Text: l.Text}
-// 		}
-// 		//fmt.Println("link: ", l.Href)
-// 		if _, ok := s[l.Href]; !ok {
-// 			if strings.Contains(l.Href, ln) && !strings.Contains(l.Href, "mailto") {
-// 				s[l.Href] = l
-// 				store(s, l.Href)
-// 			}
-// 		}
-// 	}
-// }
-
-// func getLinks(url string) ([]link.Link, error) {
-// 	resp, err := http.Get(url)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	defer resp.Body.Close()
-
-// 	links, err := link.Parse(resp.Body)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return links, nil
-// }
