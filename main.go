@@ -1,27 +1,53 @@
 package main
 
 import (
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/kravetsd/link"
 )
 
+type loc struct {
+	Value string `xml:"loc"`
+}
+
+type urlset struct {
+	Urls  []loc  `xml:"url"`
+	Xmlns string `xml:"xmlns,attr"`
+}
+
 func main() {
 	// setting the domain va flag
-	ln := flag.String("url", "https://www.calhoun.io/", "url to build sitemap for")
-	depth := flag.Int("depth", 3, "depth to traverse links")
+	ln := flag.String("url", "https://www.calhoun.io/posts", "url to build sitemap for")
+	depth := flag.Int("depth", 1, "depth to traverse links")
 	flag.Parse()
 
 	// getting the links from the domain
 	hrefs := bfs(*ln, *depth)
 	for _, ln := range hrefs {
 		fmt.Println(ln)
+	}
+
+	// creating the xml
+	toXml := urlset{Xmlns: "http://www.sitemaps.org/schemas/sitemap/0.9"}
+
+	for _, ln := range hrefs {
+		toXml.Urls = append(toXml.Urls, loc{ln})
+	}
+
+	x := xml.NewEncoder(os.Stdout)
+	x.Indent("", "  ")
+
+	fmt.Print(xml.Header)
+	if err := x.Encode(toXml); err != nil {
+		fmt.Printf("error: %v\n", err)
 	}
 
 }
