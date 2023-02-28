@@ -47,7 +47,7 @@ func main() {
 		Scheme: reqUrl.Scheme,
 		Host:   reqUrl.Host,
 	}
-	hrefs := hrefs(resp.Body, baseUrl.String())
+	hrefs := filterLinks(hrefs(resp.Body, baseUrl.String()), baseUrl.String())
 
 	for _, ln := range hrefs {
 		fmt.Println(ln)
@@ -67,6 +67,16 @@ func main() {
 	// }
 	// f.Write(res)
 
+}
+
+func filterLinks(s []string, base string) []string {
+	var hrefs []string
+	for _, ln := range s {
+		if strings.HasPrefix(ln, base) {
+			hrefs = append(hrefs, ln)
+		}
+	}
+	return hrefs
 }
 
 func hrefs(r io.Reader, base string) []string {
