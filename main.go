@@ -34,21 +34,8 @@ func main() {
 	// setting the domain va flag
 	ln := *flag.String("url", "https://www.calhoun.io/creating-random-strings-in-go/", "url to build sitemap for")
 
-	//requested url
-	resp, err := http.Get(ln)
-
-	if err != nil {
-		log.Fatal("error requesting url: ", err)
-	}
-	defer resp.Body.Close()
-
-	reqUrl := resp.Request.URL
-	baseUrl := &url.URL{
-		Scheme: reqUrl.Scheme,
-		Host:   reqUrl.Host,
-	}
-	hrefs := filterLinks(hrefs(resp.Body, baseUrl.String()), baseUrl.String())
-
+	// getting the links from the domain
+	hrefs := get(ln)
 	for _, ln := range hrefs {
 		fmt.Println(ln)
 	}
@@ -79,18 +66,35 @@ func filterLinks(s []string, base string) []string {
 	return hrefs
 }
 
+func get(urlString string) []string {
+	//requested url
+	resp, err := http.Get(urlString)
+
+	if err != nil {
+		log.Fatal("error requesting url: ", err)
+	}
+	defer resp.Body.Close()
+
+	reqUrl := resp.Request.URL
+	baseUrl := &url.URL{
+		Scheme: reqUrl.Scheme,
+		Host:   reqUrl.Host,
+	}
+	return filterLinks(hrefs(resp.Body, baseUrl.String()), baseUrl.String())
+}
+
 func hrefs(r io.Reader, base string) []string {
 	links, _ := link.Parse(r)
-	var hrefs []string
+	var ret []string
 	for _, ln := range links {
 		switch {
 		case strings.HasPrefix(ln.Href, "/"):
-			hrefs = append(hrefs, base+ln.Href)
+			ret = append(ret, base+ln.Href)
 		case strings.HasPrefix(ln.Href, "http"):
-			hrefs = append(hrefs, ln.Href)
+			ret = append(ret, ln.Href)
 		}
 	}
-	return hrefs
+	return ret
 }
 
 // func store(s LinkStore, ln string) {
