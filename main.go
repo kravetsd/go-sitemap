@@ -14,29 +14,42 @@ import (
 
 func main() {
 	// setting the domain va flag
-	ln := flag.String("url", "https://www.calhoun.io/creating-random-strings-in-go/", "url to build sitemap for")
+	ln := flag.String("url", "https://www.calhoun.io/", "url to build sitemap for")
+	depth := flag.Int("depth", 3, "depth to traverse links")
 	flag.Parse()
 
-	fmt.Println("Getting links from: ", *ln)
 	// getting the links from the domain
-	hrefs := get(*ln)
+	hrefs := bfs(*ln, *depth)
 	for _, ln := range hrefs {
 		fmt.Println(ln)
 	}
 
-	// storage := make(LinkStore)
-	// store(storage, ln)
-	// urlset := Urlset{URL: getUrls(storage)}
+}
 
-	// res, _ := xml.MarshalIndent(urlset, "", "  ")
-	// res = append([]byte(xml.Header), res...)
+func bfs(urlString string, depth int) []string {
+	seen := make(map[string]struct{})
+	var q map[string]struct{}
+	nq := map[string]struct{}{
+		urlString: struct{}{},
+	}
 
-	// Creating an xml file
-	// f, err := os.Create("sitemap.xml")
-	// if err != nil {
-	// 	log.Fatal("error creating xml file", err)
-	// }
-	// f.Write(res)
+	for i := 0; i <= depth; i++ {
+		q, nq = nq, make(map[string]struct{})
+		for l, _ := range q {
+			if _, ok := seen[l]; ok {
+				continue
+			}
+			seen[l] = struct{}{}
+			for _, ln := range get(l) {
+				nq[ln] = struct{}{}
+			}
+		}
+	}
+	var ret []string
+	for k, _ := range seen {
+		ret = append(ret, k)
+	}
+	return ret
 
 }
 
